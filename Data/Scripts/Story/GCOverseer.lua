@@ -85,8 +85,12 @@ end
 ---@param object_type_name string
 function Galactic_Unit_Produced(object_type_name)
     DebugMessage("%s -- Unit Produced: %s", tostring(Script), tostring(object_type_name))
+
+    FluidTech:Process_Incoming_Event(object_type_name)
 end
 ---@param object_type_name string
 function Galactic_Unit_Destoryed(object_type_name)
     DebugMessage("%s -- Unit Destroyed: %s", tostring(Script), tostring(object_type_name))
+
+    FluidTech:Process_Incoming_Event(object_type_name, true)
 end

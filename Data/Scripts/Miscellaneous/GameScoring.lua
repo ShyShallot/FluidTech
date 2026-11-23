@@ -511,7 +511,6 @@ end
 ---@param object_type GameObjectType
 function Galactic_Production_Begin_Event(planet, object_type)
 	--Track credits spent
-	GlobalValue.Set("GALACTIC_PRODUCTION_EVENT", object_type.Get_Name())
 end
 
 --
@@ -552,6 +551,7 @@ function Galactic_Production_End_Event(planet, object)
 		-- have a Get_Type function.
 		Update_Build_Stats_Table(GalacticBuildStatsTable, planet, object, planet.Get_Owner(), object.Get_Build_Cost())
 	else
+		GlobalValue.Set("GALACTIC_PRODUCTION_EVENT", object.Get_Type().Get_Name())
 		-- object points to the GameObjectWrapper that was just created.
 		Update_Build_Stats_Table(GalacticBuildStatsTable, planet, object.Get_Game_Scoring_Type(), planet.Get_Owner(),
 			object.Get_Game_Scoring_Type().Get_Build_Cost())

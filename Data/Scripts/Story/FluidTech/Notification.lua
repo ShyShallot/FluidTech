@@ -46,13 +46,13 @@ function Notification_System:Process_Events()
 
     for Event, Data in pairs(self.Events) do
 
-        DebugMessage("%s -- Current Event: %s", tostring(Script), tostring(Event))
+        --DebugMessage("%s -- Current Event: %s", tostring(Script), tostring(Event))
 
         if type(Event) == "string" then
             
             local Event_Value = GlobalValue.Get(Event)
 
-            DebugMessage("%s -- Notification Value for Event %s: %s", tostring(Script), tostring(Event), tostring(Event_Value))
+            --DebugMessage("%s -- Notification Value for Event %s: %s", tostring(Script), tostring(Event), tostring(Event_Value))
             if type(Event_Value) == "string" then
                 for _, sub_func in pairs(Data.Subscribers) do
                     DebugMessage("%s -- Calling Function: %s", tostring(Script), tostring(sub_func))

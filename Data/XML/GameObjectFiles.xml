@@ -165,4 +165,6 @@
 	<File>CIN_Projectiles.xml</File>
 	<File>CIN_GroundProps.xml</File>
 	<File>CIN_GroundTurrets.xml</File>
+
+	<File>FluidTech\Test_Structures.xml</File>
 </Game_Object_Files>

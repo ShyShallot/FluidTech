@@ -84,79 +84,20 @@ function Fluid_Tech:Update()
         return
     end
 
+    DebugMessage("%s -- Current Industrial Value: %s, Current Scientific Value: %s", tostring(Script), tostring(self.Industrial.Global_Value), tostring(self.Scientific.Global_Value))
+
     self.Notifications:Process_Events()
 
     if not self.Is_Dirty then
         return
     end
 
+    DebugMessage("%s -- Is Dirty, Updating Units", tostring(Script))
+
     --self:Check_Units()
 
     self.Is_Dirty = false
     
-end
----@private
-function Fluid_Tech:Structure_Search()
-
-    local Structure_List = Find_All_Objects_Of_Type(self.Human, self.Structure_Type_Search)
-
-    if table.getn(Structure_List) < 1 then
-        return
-    end
-
-    for _, Structure in pairs(Structure_List) do
-        if TestValid(Structure) then
-            if self.Specific_Structure_List[Structure] == nil then
-
-                local Structure_Data = self.Unit_Tech_Table:Resolve_Structure_Data()
-
-                if Structure_Data ~= nil then
-
-                    local Structure_Name = Structure.Get_Type().Get_Name()
-
-                    self.Specific_Structure_List[Structure] = {
-                        Data = Structure_Data,
-                        Name = Structure_Name
-                    }
-                end
-            end
-        end
-    end
-end
-
----@private
-function Fluid_Tech:Structure_Update()
-    if table.getn(self.Specific_Structure_List) < 1 then
-        return
-    end
-
-    local New_Industrial_Value = 0
-
-    local New_Scientific_Value = 0
-
-    for Structure, Structure_Data in pairs(self.Specific_Structure_List) do
-        if type(Structure_Data.Data) == "table" then
-            if type(Structure_Data.Data.Industrial) == "number" then
-                New_Industrial_Value = New_Industrial_Value + Structure_Data.Data.Industrial
-            end
-            
-            if type(Structure_Data.Data.Scientific) == "number" then
-                New_Scientific_Value = New_Scientific_Value + Structure_Data.Data.Scientific
-            end
-        end
-    end
-
-    if type(New_Industrial_Value) == "number" then
-
-        self.Industrial.Global_Value = New_Industrial_Value
-    
-    end
-
-    if type(New_Scientific_Value) == "number" then
-
-        self.Scientific.Global_Value = New_Scientific_Value
-    
-    end
 end
 
 ---@private
@@ -193,6 +134,52 @@ function Fluid_Tech:Check_Units()
             end
         end
     end
+end
+
+---@param object_type_name string|nil
+---@param is_bad boolean|nil If not true, we assume its a good event, thus add to our values
+function Fluid_Tech:Process_Incoming_Event(object_type_name, is_bad)
+    if type(object_type_name) ~= "string" then
+        return
+    end
+
+    if not is_bad then
+        is_bad = false
+    end
+
+    DebugMessage("%s -- Processing Incoming Event for Unit: %s, Is Bad: %s", tostring(Script), tostring(object_type_name), tostring(is_bad))
+
+    local Structure_Data = self.Unit_Tech_Table:Resolve_Structure_Data(object_type_name)
+
+    DebugMessage("%s -- Structure Data: %s", tostring(Script), tostring(Structure_Data))
+
+    if Structure_Data == nil then
+        DebugMessage("%s -- Unit had no Structure Data, Ignoring", tostring(Script))
+        return
+    end
+
+    if Structure_Data.Amount == nil then
+        return
+    end
+
+    if Structure_Data.Type == nil then
+        return
+    end
+
+    local Structure_Amount = Structure_Data.Amount
+
+    if is_bad then
+        Structure_Amount = Structure_Amount * - 1
+    end
+
+    if sanatized_string_check(Structure_Data.Type, "Industrial") then
+        DebugMessage("%s -- Adding/Subtracting %s to Industrial Value", tostring(Script), tostring(Structure_Amount))
+        self.Industrial:Add_Value(Structure_Amount)
+    elseif sanatized_string_check(Structure_Data.Type, "Scientific") then
+        DebugMessage("%s -- Adding/Subtracting %s to Scientific Value", tostring(Script), tostring(Structure_Amount))
+        self.Scientific:Add_Value(Structure_Amount)
+    end
+        
 end
 
 ---@param new_value number
