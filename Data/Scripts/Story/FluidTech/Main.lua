@@ -39,10 +39,11 @@ Fluid_Tech = {
 
     Human = nil,
 }
----@param HumanPlayer PlayerWrapper
+---@param HumanPlayer PlayerWrapper|nil
 function Fluid_Tech:Init(HumanPlayer)
     if self.Unit_Tech_Table == nil then
         self.Unit_Tech_Table = require("FluidTech/Unit_Tech_Table")
+        DebugMessage("%s -- FluidTech Found Unit Table", tostring(Script))
     end
 
     for Unit_Name, _ in pairs(self.Unit_Tech_Table.Units) do
@@ -52,12 +53,22 @@ function Fluid_Tech:Init(HumanPlayer)
     if HumanPlayer ~= nil then
         if HumanPlayer.Get_Faction_Name ~= nil then
             self.Human = HumanPlayer
+            DebugMessage("%s -- FluidTech Found Human Player: %s", tostring(Script), tostring(HumanPlayer))
         end
+    else
+        return
     end
 
     self.Notifications = require("FluidTech/Notification")
 
+    if self.Notifications == nil then
+        DebugMessage("%s -- FluidTech Failed to Initalize, Failed to Grab Notification System", tostring(Script))
+        return
+    end
+
     self.Setup = true
+
+    DebugMessage("%s -- FluidTech Successfuly Initalized", tostring(Script))
 end
 
 function Fluid_Tech:Update()
@@ -73,13 +84,13 @@ function Fluid_Tech:Update()
         return
     end
 
-    self.Notification_System:Process_Events()
+    self.Notifications:Process_Events()
 
     if not self.Is_Dirty then
         return
     end
 
-    self:Check_Units()
+    --self:Check_Units()
 
     self.Is_Dirty = false
     
@@ -251,3 +262,5 @@ function sanatized_string_check(str1, str2)
     return string.lower(str1) == string.lower(str2)
 
 end
+
+return Fluid_Tech

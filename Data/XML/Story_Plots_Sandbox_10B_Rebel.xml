@@ -3,6 +3,9 @@
 <Story_Mode_Plots>
 	<Lua_Script></Lua_Script>
 	<Active_Plot>Story_Sandbox_10B_Rebel.XML</Active_Plot>
+
+	<Lua_Script>GCOverseer</Lua_Script>
+	<Active_Plot>FluidTech\GCOverseerEvents.xml</Active_Plot>
 	
 	<Suspended_Plot>Intervention_Upgrade_Space_Station.xml</Suspended_Plot>
 	<Suspended_Plot>Intervention_Build_Generic_Structure.xml</Suspended_Plot>

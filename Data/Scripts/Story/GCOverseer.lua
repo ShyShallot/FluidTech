@@ -10,6 +10,15 @@ function Definitions()
     }
 
     FluidTech = nil
+
+    Faction_List = {
+        "Rebel",
+        "Empire",
+        "Underworld",
+    }
+
+    ---@type PlayerWrapper|nil
+    Player = nil
 end
 
 function Init_GC(message)
@@ -17,18 +26,26 @@ function Init_GC(message)
         return
     end
 
+    Player = Find_Human_Player()
+
     ---@type Fluid_Tech_Main|nil
     FluidTech = require("FluidTech/Main")
 
     if FluidTech == nil then
         return
     end
-    
-    FluidTech:Init()
+
+    FluidTech:Init(Player)
+
+    if not FluidTech.Setup then
+        return
+    end
 
     FluidTech.Notifications:Subscribe(Galactic_Unit_Produced,"GALACTIC_PRODUCTION_EVENT")
 
     FluidTech.Notifications:Subscribe(Galactic_Unit_Destoryed,"GALACTIC_DESTRUCTION_EVENT")
+
+    Set_Next_State("Flush")
 end
 
 function Update(message)
@@ -48,6 +65,23 @@ function Flush(message)
         Set_Next_State("Update")
     end
 end
+
+---@return PlayerWrapper|nil
+function Find_Human_Player()
+    
+    for _, faction_name in pairs(Faction_List) do
+        local faction = Find_Player(faction_name)
+
+        if TestValid(faction) then
+            if faction.Is_Human() then
+                return faction
+            end
+        end
+    end
+
+    return nil
+end
+
 ---@param object_type_name string
 function Galactic_Unit_Produced(object_type_name)
     DebugMessage("%s -- Unit Produced: %s", tostring(Script), tostring(object_type_name))
