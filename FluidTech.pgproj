@@ -1,0 +1,25 @@
+{
+  "_type": "aetswg.ModProject",
+  "_typeVersion": "aetswg-1.1.0",
+  "name": "FluidTech",
+  "game": "foc",
+  "directories": {
+    "xml": [
+      "Data/XML"
+    ],
+    "scripts": [
+      "Data/Scripts"
+    ],
+    "storyDialog": [
+      "Data/Scripts/Story"
+    ],
+    "art": [
+      "Data/Art"
+    ]
+  },
+  "localisation": {
+    "type": "DAT",
+    "directory": "Data/Text"
+  },
+  "projectReferences": []
+}
