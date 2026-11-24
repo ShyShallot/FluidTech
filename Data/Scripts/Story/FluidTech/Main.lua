@@ -3,14 +3,9 @@ require("PGStoryMode")
 ---@class Fluid_Tech_Main
 Fluid_Tech = {
     
-    Industrial = {
-        Global_Value = 0,
-        Last = 0,
-    },
-
-    Scientific = {
-        Global_Value = 0,
-        Last = 0,
+    Tech_Values = {
+        Scientific = 0,
+        Industrial = 0,
     },
 
     Last_Structure_List_Count = 0,
@@ -27,16 +22,12 @@ Fluid_Tech = {
 
     Are_Structures_Dirty = false,
 
-    Local_Unit_Table = {
-        Locked = {},
-        Unlocked = {},
-    },
-
     Structure_Type_Search = "FluidTechStructure",
 
     ---@type Notifications|nil
     Notifications = nil,
 
+    ---@type PlayerWrapper|nil
     Human = nil,
 }
 ---@param HumanPlayer PlayerWrapper|nil
@@ -44,10 +35,6 @@ function Fluid_Tech:Init(HumanPlayer)
     if self.Unit_Tech_Table == nil then
         self.Unit_Tech_Table = require("FluidTech/Unit_Tech_Table")
         DebugMessage("%s -- FluidTech Found Unit Table", tostring(Script))
-    end
-
-    for Unit_Name, _ in pairs(self.Unit_Tech_Table.Units) do
-        table.insert(self.Local_Unit_Table.Locked, Unit_Name)
     end
 
     if HumanPlayer ~= nil then
@@ -66,6 +53,8 @@ function Fluid_Tech:Init(HumanPlayer)
         return
     end
 
+    self:Check_Units()
+
     self.Setup = true
 
     DebugMessage("%s -- FluidTech Successfuly Initalized", tostring(Script))
@@ -73,28 +62,30 @@ end
 
 function Fluid_Tech:Update()
     if not self.Setup then
+        DebugMessage("%s -- FluidTech Failed to Update! Not Setup", tostring(Script))
         return
     end
 
     if not self.Human then
+        DebugMessage("%s -- FluidTech Failed to Update! No Player Set", tostring(Script))
         return
     end
 
     if self.Unit_Tech_Table == nil then
+        DebugMessage("%s -- FluidTech Failed to Update! No Unit Table defined", tostring(Script))
         return
     end
-
-    DebugMessage("%s -- Current Industrial Value: %s, Current Scientific Value: %s", tostring(Script), tostring(self.Industrial.Global_Value), tostring(self.Scientific.Global_Value))
 
     self.Notifications:Process_Events()
 
     if not self.Is_Dirty then
+        DebugMessage("%s -- FluidTech - Canceling Unit Check, Not Dirty", tostring(Script))
         return
     end
 
-    DebugMessage("%s -- Is Dirty, Updating Units", tostring(Script))
+    DebugMessage("%s -- FluidTech - Is Dirty, Updating Units", tostring(Script))
 
-    --self:Check_Units()
+    self:Check_Units()
 
     self.Is_Dirty = false
     
@@ -103,37 +94,97 @@ end
 ---@private
 function Fluid_Tech:Check_Units()
 
-    for i = table.getn(self.Local_Unit_Table.Locked), 1, -1 do
-        local Unit_Name = self.Local_Unit_Table.Locked[i]
+    if self.Unit_Tech_Table == nil then
+        DebugMessage("%s -- Failed to Check Units! No Unit Table Defined", tostring(Script))
+        return
+    end
 
-        if type(Unit_Name) == "string" then
-            local Data = self.Unit_Tech_Table:Resolve_Unit_Data(Unit_Name)
+    if self.Unit_Tech_Table.Units == nil then
+        DebugMessage("%s -- Failed to Check Units! Unit Table improperly defined", tostring(Script))
+        return
+    end
 
-            if type(Data) == "table" then
-                if self.Industrial.Global_Value >= Data.Industrial and self.Scientific.Global_Value >= Data.Scientific then
-                    Data.Requirements_Met = true
-                    table.insert(self.Local_Unit_Table.Unlocked, Unit_Name)
-                    table.remove(self.Local_Unit_Table.Locked, i)
+    if self:Table_Size(self.Unit_Tech_Table.Units) < 1 then
+        DebugMessage("%s -- Failed to Check Units! Unit table is missing entries!", tostring(Script))
+        return
+    end
+
+    for Unit_Name, Data in pairs(self.Unit_Tech_Table.Units) do
+
+        local all_requirements_met = true
+
+        DebugMessage("%s -- Checking Requirements for Unit: %s", tostring(Script), tostring(Unit_Name))
+
+        if type(Data.Requirements) == "table" then
+            for Req_Type, Req_Value in pairs(Data.Requirements) do
+                DebugMessage("%s -- Comparing Req Value for Type: %s", tostring(Script), tostring(Req_Type))
+                if self.Tech_Values[Req_Type] ~= nil then
+                    if self.Tech_Values[Req_Type] < Req_Value then
+                        DebugMessage("%s -- Failed Requirement Check for Type %s, Required Value: %s, Current Value: %s", tostring(Script), tostring(Req_Type), tostring(Req_Value), tostring(self.Tech_Values[Req_Type]))
+                        all_requirements_met = false
+                        break
+                    end
+                else
+                    DebugMessage("%s -- ERROR Requirement Type is missing Definitions in Fluid_Tech Main.lua!", tostring(Script))
+                    all_requirements_met = false
+                    break
                 end
             end
         end
-    end
 
-    for i = table.getn(self.Local_Unit_Table.Unlocked), 1, -1 do
-        local Unit_Name = self.Local_Unit_Table.Unlocked[i]
+        Data.Requirements_Met = all_requirements_met
 
-        if type(Unit_Name) == "string" then
-            local Data = self.Unit_Tech_Table:Resolve_Unit_Data(Unit_Name)
-
-            if type(Data) == "table" then
-                if self.Industrial.Global_Value < Data.Industrial or self.Scientific.Global_Value < Data.Scientific then
-                    Data.Requirements_Met = false
-                    table.insert(self.Local_Unit_Table.Locked, Unit_Name)
-                    table.remove(self.Local_Unit_Table.Unlocked, i)
-                end
-            end
+        if all_requirements_met then
+            self:Lock_Unit_Type(Unit_Name, true)
+        else
+            self:Lock_Unit_Type(Unit_Name)
         end
     end
+end
+
+---@param unit_type_name string
+---@param needs_unlock? boolean Default Behaviour is lock, True -- > Unlock, False/Not Provided --> Lock
+function Fluid_Tech:Lock_Unit_Type(unit_type_name, needs_unlock)
+
+    if type(unit_type_name) ~= "string" then
+        return
+    end
+
+    if self.Human == nil then
+        return
+    end
+
+    if needs_unlock ~= true then
+        needs_unlock = false
+    end
+
+    local unit_type = Find_Object_Type(unit_type_name)
+
+    if unit_type == nil then
+        return
+    end
+
+    if needs_unlock then
+        self.Human.Unlock_Tech(unit_type)
+    else
+        self.Human.Lock_Tech(unit_type)
+    end
+end
+
+---@param unit_type_name string
+---@return boolean
+function Fluid_Tech:Is_Object_Unlocked(unit_type_name)
+    if type(unit_type_name) ~= "string" then
+        return false
+    end
+
+    local Unit_Data = self.Unit_Tech_Table:Resolve_Unit_Data(unit_type_name)
+
+    if Unit_Data == nil then
+        return false
+    end
+
+    return Unit_Data.Requirements_Met
 end
 
 ---@param object_type_name string|nil
@@ -143,7 +194,7 @@ function Fluid_Tech:Process_Incoming_Event(object_type_name, is_bad)
         return
     end
 
-    if not is_bad then
+    if type(is_bad) ~= "boolean" then
         is_bad = false
     end
 
@@ -172,67 +223,49 @@ function Fluid_Tech:Process_Incoming_Event(object_type_name, is_bad)
         Structure_Amount = Structure_Amount * - 1
     end
 
-    if sanatized_string_check(Structure_Data.Type, "Industrial") then
-        DebugMessage("%s -- Adding/Subtracting %s to Industrial Value", tostring(Script), tostring(Structure_Amount))
-        self.Industrial:Add_Value(Structure_Amount)
-    elseif sanatized_string_check(Structure_Data.Type, "Scientific") then
-        DebugMessage("%s -- Adding/Subtracting %s to Scientific Value", tostring(Script), tostring(Structure_Amount))
-        self.Scientific:Add_Value(Structure_Amount)
-    end
-        
+    self.Is_Dirty = true
+
+    self.Tech_Values:Add_Value(Structure_Amount, Structure_Data.Type)
+
 end
 
----@param new_value number
-function Fluid_Tech.Industrial:Add_Value(new_value)
-    if type(new_value) ~= "number" then
+---@param add_value number
+---@param value_type string Case Sensitive
+function Fluid_Tech.Tech_Values:Add_Value(add_value, value_type)
+    if type(add_value) ~= "number" then
        return
     end
 
-    local new_global_value = self.Global_Value + new_value
-
-    if type(new_global_value) ~= "number" then
+    if type(value_type) ~= "string" then
         return
     end
 
-    self.Global_Value = new_global_value
-
-    Fluid_Tech.Is_Dirty = true
-end
----@param new_value number
-function Fluid_Tech.Industrial:Set_Value(new_value)
-    if type(new_value) ~= "number" then
-       return
-    end
-
-    self.Global_Value = new_value
-
-    Fluid_Tech.Is_Dirty = true
-end
----@param new_value number
-function Fluid_Tech.Scientific:Add_Value(new_value)
-    if type(new_value) ~= "number" then
-       return
-    end
-
-    local new_global_value = self.Global_Value + new_value
-
-    if type(new_global_value) ~= "number" then
+    if self[value_type] == nil then
         return
     end
 
-    self.Global_Value = new_global_value
+    local new_value = self[value_type] + add_value
 
-    Fluid_Tech.Is_Dirty = true
-end
----@param new_value number
-function Fluid_Tech.Scientific:Set_Value(new_value)
-    if type(new_value) ~= "number" then
-       return
+    if type(new_value) == "number" then
+        DebugMessage("%s -- Adding %s to Tech Value %s. New Value: %s", tostring(Script), tostring(add_value), tostring(value_type), tostring(new_value))
+        self[value_type] = new_value
     end
 
-    self.Global_Value = new_value
+end
 
-    Fluid_Tech.Is_Dirty = true
+---@param tbl table|nil
+function Fluid_Tech:Table_Size(tbl)
+    if type(tbl) ~= "table" then
+        return 0
+    end
+
+    local size = 0
+
+    for _, Item in pairs(tbl) do
+        size = size + 1
+    end
+
+    return size
 end
 
 ---@param str1 string

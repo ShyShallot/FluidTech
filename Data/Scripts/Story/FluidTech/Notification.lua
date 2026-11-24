@@ -54,6 +54,7 @@ function Notification_System:Process_Events()
 
             --DebugMessage("%s -- Notification Value for Event %s: %s", tostring(Script), tostring(Event), tostring(Event_Value))
             if type(Event_Value) == "string" then
+                DebugMessage("%s -- Notification Value for Event %s: %s", tostring(Script), tostring(Event), tostring(Event_Value))
                 for _, sub_func in pairs(Data.Subscribers) do
                     DebugMessage("%s -- Calling Function: %s", tostring(Script), tostring(sub_func))
                     pcall(sub_func, Event_Value)

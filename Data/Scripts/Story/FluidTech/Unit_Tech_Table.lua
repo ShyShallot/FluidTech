@@ -7,10 +7,20 @@
 Fluid_Tech_Unit_Table = {
     Units = {
         ["STAR_DESTROYER"] = {
-            Industrial = 100,
-            Scientific = 50,
+            Requirements = {
+                ["Industrial"] = 100,
+                ["Scientific"] = 50,
+            },
             Requirements_Met = false,
-        }
+        },
+        ["R_Ground_Barracks"] = {
+            Requirements = {
+                ["Industrial"] = 25
+            },
+            Requirements_Met = false,
+        },
+    },
+    Cateogries = {
     },
     Structures = {
         ["EXAMPLE_INDUSTRIAL_STRUCTURE"] = {

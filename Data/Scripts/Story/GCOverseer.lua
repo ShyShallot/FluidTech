@@ -9,6 +9,7 @@ function Definitions()
         Flush = Flush,
     }
 
+    ---@type Fluid_Tech_Main|nil
     FluidTech = nil
 
     Faction_List = {
@@ -28,7 +29,7 @@ function Init_GC(message)
 
     Player = Find_Human_Player()
 
-    ---@type Fluid_Tech_Main|nil
+    
     FluidTech = require("FluidTech/Main")
 
     if FluidTech == nil then
