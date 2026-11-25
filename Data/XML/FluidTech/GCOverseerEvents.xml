@@ -5,4 +5,20 @@
         <Event_Type>STORY_ELAPSED</Event_Type>
         <Event_Param1>3</Event_Param1>
     </Event>
+
+    <Event Name="Enable_Unit_Construction">
+        <Event_Type>STORY_AI_NOTIFICATION</Event_Type>
+        <Event_Param2>ENABLE_UNIT_CONSTRUCTION</Event_Param2>
+        <Reward_Type>ENABLE_BUILDABLE</Reward_Type>
+        <Rewward_Param1></Rewward_Param1>
+        <Perpetual>True</Perpetual>
+    </Event>
+
+    <Event Name="Disable_Unit_Construction">
+        <Event_Type>STORY_AI_NOTIFICATION</Event_Type>
+        <Event_Param2>DISABLE_UNIT_CONSTRUCTION</Event_Param2>
+        <Reward_Type>DISABLE_BUILDABLE</Reward_Type>
+        <Rewward_Param1></Rewward_Param1>
+        <Perpetual>True</Perpetual>
+    </Event>
 </Story>

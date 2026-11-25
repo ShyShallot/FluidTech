@@ -29,12 +29,24 @@ Fluid_Tech = {
 
     ---@type PlayerWrapper|nil
     Human = nil,
+
+    Plot_Location = "FluidTech\\GCOverseerEvents.xml",
+
+    ---@type StoryPlot|nil
+    Plot = nil,
 }
 ---@param HumanPlayer PlayerWrapper|nil
 function Fluid_Tech:Init(HumanPlayer)
     if self.Unit_Tech_Table == nil then
         self.Unit_Tech_Table = require("FluidTech/Unit_Tech_Table")
         DebugMessage("%s -- FluidTech Found Unit Table", tostring(Script))
+    end
+
+    self.Plot = Get_Story_Plot(self.Plot_Location)
+
+    if self.Plot == nil then
+        DebugMessage("%s -- FluidTech Failed to Initalize, Failed to find Story Plot", tostring(Script))
+        return
     end
 
     if HumanPlayer ~= nil then
@@ -142,6 +154,7 @@ function Fluid_Tech:Check_Units()
     end
 end
 
+
 ---@param unit_type_name string
 ---@param needs_unlock? boolean Default Behaviour is lock, True -- > Unlock, False/Not Provided --> Lock
 function Fluid_Tech:Lock_Unit_Type(unit_type_name, needs_unlock)
@@ -164,11 +177,18 @@ function Fluid_Tech:Lock_Unit_Type(unit_type_name, needs_unlock)
         return
     end
 
+    local Event = self.Plot.Get_Event("Disable_Unit_Construction")
+
+    local Event_Name = "DISABLE_UNIT_CONSTRUCTION"
+
     if needs_unlock then
-        self.Human.Unlock_Tech(unit_type)
-    else
-        self.Human.Lock_Tech(unit_type)
+        Event = self.Plot.Get_Event("Enable_Unit_Construction")
+        Event_Name = "ENABLE_UNIT_CONSTRUCTION"
     end
+
+    Event.Set_Reward_Parameter(0, unit_type)
+
+    Story_Event(Event_Name)
 end
 
 ---@param unit_type_name string

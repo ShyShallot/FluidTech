@@ -1,6 +1,7 @@
 --[[
     If you want a unit to be affected by this systme add them to this table, if they are not in here they will not be locked or unlocked accordingly
     ALL ENTRIES MUST BE ALL UPPERCASE even if in XML the unit entry is Star_Destroyer, it MUST BE STAR_DESTROYER in Lua
+
 ]]--
 
 ---@class Fluid_Tech_Table
@@ -20,7 +21,13 @@ Fluid_Tech_Unit_Table = {
             Requirements_Met = false,
         },
     },
-    Cateogries = {
+    Cateogries = { -- WIP
+        ["Frigate"] = {
+            Requirements = {
+                ["Industrial"] = 25,
+            },
+            Requirements_Met = false,
+        }
     },
     Structures = {
         ["EXAMPLE_INDUSTRIAL_STRUCTURE"] = {
