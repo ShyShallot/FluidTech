@@ -14,15 +14,15 @@ Fluid_Tech_Unit_Table = {
             },
             Requirements_Met = false,
         },
-        ["R_Ground_Barracks"] = {
+        ["R_GROUND_BARRACKS"] = {
             Requirements = {
                 ["Industrial"] = 25
             },
             Requirements_Met = false,
         },
     },
-    Cateogries = { -- WIP
-        ["Frigate"] = {
+    Categories = { -- WIP
+        ["FRIGATE"] = {
             Requirements = {
                 ["Industrial"] = 25,
             },
@@ -91,6 +91,16 @@ function Fluid_Tech_Unit_Table:Resolve_Structure_Data(Structure_Name)
     Structure_Name = string.upper(Structure_Name)
 
     return self.Structures[Structure_Name]
+end
+
+function Fluid_Tech_Unit_Table:Resolve_Category_Data(Category_Name)
+    if type(Category_Name) ~= "string" then
+        return nil
+    end
+
+    Category_Name = string.upper(Category_Name)
+
+    return self.Categories[Category_Name]
 end
 
 return Fluid_Tech_Unit_Table

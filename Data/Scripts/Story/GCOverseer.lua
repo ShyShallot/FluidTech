@@ -29,6 +29,7 @@ function Init_GC(message)
 
     Player = Find_Human_Player()
 
+    local Example_Table = require("FluidTech/Example_Table")
     
     FluidTech = require("FluidTech/Main")
 
@@ -36,7 +37,7 @@ function Init_GC(message)
         return
     end
 
-    FluidTech:Init(Player)
+    FluidTech:Init(Player, Example_Table)
 
     if not FluidTech.Setup then
         return

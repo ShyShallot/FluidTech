@@ -34,9 +34,14 @@ Fluid_Tech = {
 
     ---@type StoryPlot|nil
     Plot = nil,
+
+    ---@type table|nil
+    External_Unit_Table = nil,
 }
 ---@param HumanPlayer PlayerWrapper|nil
-function Fluid_Tech:Init(HumanPlayer)
+---@param Unit_Table table|nil
+function Fluid_Tech:Init(HumanPlayer, Unit_Table)
+
     if self.Unit_Tech_Table == nil then
         self.Unit_Tech_Table = require("FluidTech/Unit_Tech_Table")
         DebugMessage("%s -- FluidTech Found Unit Table", tostring(Script))
@@ -65,6 +70,12 @@ function Fluid_Tech:Init(HumanPlayer)
         return
     end
 
+    if type(Unit_Table) == "table" then
+        self.External_Unit_Table = Unit_Table
+    end
+
+    self:Check_Categories()
+
     self:Check_Units()
 
     self.Setup = true
@@ -88,7 +99,9 @@ function Fluid_Tech:Update()
         return
     end
 
-    self.Notifications:Process_Events()
+    self:Calculate_Tech_Values()
+
+    --self.Notifications:Process_Events()
 
     if not self.Is_Dirty then
         DebugMessage("%s -- FluidTech - Canceling Unit Check, Not Dirty", tostring(Script))
@@ -97,10 +110,198 @@ function Fluid_Tech:Update()
 
     DebugMessage("%s -- FluidTech - Is Dirty, Updating Units", tostring(Script))
 
+    self:Check_Categories()
+
     self:Check_Units()
 
     self.Is_Dirty = false
     
+end
+
+---@private
+function Fluid_Tech:Calculate_Tech_Values()
+    
+    if self.Unit_Tech_Table == nil then
+        return
+    end
+
+    if self:Table_Size(self.Unit_Tech_Table.Structures) < 1 then
+        return
+    end
+
+    DebugMessage("%s -- Starting Calculation of Tech Values", tostring(Script))
+
+    local New_Tech_Values = {}
+
+    for Structure_Name, Data in pairs(self.Unit_Tech_Table.Structures) do
+        local Structures = Find_All_Objects_Of_Type(Structure_Name)
+
+        local Structure_Count = self:Table_Size(Structures)
+
+        DebugMessage("%s -- Calculated Value for Type %s from Structure %s: %s", tostring(Script), tostring(Data.Type), tostring(Structure_Name), tostring(Data.Amount * Structure_Count))
+
+        if New_Tech_Values[Data.Type] == nil then
+            New_Tech_Values[Data.Type] = Data.Amount * Structure_Count
+        else
+            New_Tech_Values[Data.Type] = New_Tech_Values[Data.Type] + (Data.Amount * Structure_Count)
+        end
+    end
+
+    for Type_Name, Value in pairs(New_Tech_Values) do
+        if self.Tech_Values[Type_Name] ~= nil then
+
+            local Old_Value = self.Tech_Values[Type_Name]
+
+            if Old_Value ~= Value then
+                self.Is_Dirty = true
+                self.Tech_Values[Type_Name] = Value
+            end
+        end
+    end
+end
+
+--[[
+
+    WARNING, ENTRY NAME MUST BE ALL CAPS
+
+    even if the xml name is like so <SpaceUnit Name="Star_Destroyer">
+
+    the LUA table entry must be STAR_DESTROYER
+
+    This assumes a Unit table structure like this example, 
+    Unit_Table = {
+        ["STAR_DESTROYER"] = {
+            Categories = {"Capital", "NonHero"}
+        }
+    }
+    
+    If Categories is nil, it will Check for Category if the table is set like so
+
+    Unit_Table = {
+        ["STAR_DESTROYER"] = {
+            Category = "Capital"
+        }
+    }
+    
+    Returns a table of all categories, even if there is only one category it will return a table like this: {"Capital"}
+    Or if it can't resolve it will return nil
+]]--
+---@param unit_type_name string
+---@return table|nil
+function Fluid_Tech:Resolve_Unit_Category(unit_type_name)
+
+    if type(unit_type_name) ~= "string" then
+        return nil
+    end
+
+    if self.External_Unit_Table == nil then
+        return nil
+    end
+
+    unit_type_name = string.upper(unit_type_name)
+
+    local Unit_Entry = self.External_Unit_Table[unit_type_name]
+
+    if Unit_Entry.Categories ~= nil then
+        return Unit_Entry.Categories
+    end
+
+    if Unit_Entry.Category ~= nil then
+        return {Unit_Entry.Category}
+    end
+
+    return nil
+end
+
+---@param unit_type_name string
+---@param category string
+---@return boolean
+function Fluid_Tech:Is_Unit_In_Category(unit_type_name, category)
+
+    if type(unit_type_name) ~= "string" then
+        return false
+    end
+
+    if type(category) ~= "string" then
+        return false
+    end
+
+    local Unit_Categories = self:Resolve_Unit_Category(unit_type_name)
+
+    if Unit_Categories == nil then
+        return false
+    end
+
+    for _, Category in pairs(Unit_Categories) do
+        if sanatized_string_check(category, Category) then
+            return true
+        end
+    end
+
+    return false
+end
+
+---@param category_name string|nil
+---@return boolean
+function Fluid_Tech:Is_Category_Unlocked(category_name)
+    if type(category_name) ~= "string" then
+        return false
+    end
+
+    local Category_Data = self.Unit_Tech_Table:Resolve_Category_Data(category_name)
+
+    if Category_Data ~= nil then
+
+        if Category_Data.Requirements_Met == nil then
+            return false
+        end
+
+        return Category_Data.Requirements_Met
+    end
+
+    return false
+end
+
+function Fluid_Tech:Check_Categories()
+
+    if type(self.External_Unit_Table) ~= "table" then
+        DebugMessage("%s -- Failed to Check Categories! No External Unit Table Defined", tostring(Script))
+        return
+    end
+
+    if self:Table_Size(self.External_Unit_Table) < 1 then
+        DebugMessage("%s -- Failed to Check Categories! External Unit Table is Empty", tostring(Script))
+        return
+    end
+
+    if self.Unit_Tech_Table.Categories == nil then
+        DebugMessage("%s -- Failed to Check Categories! No Categories defined in Unit Tech Table", tostring(Script))
+        return
+    end
+
+    for Category, Data in pairs(self.Unit_Tech_Table.Categories) do
+        local all_requirements_met = true
+
+        DebugMessage("%s -- Checking Requirements for Category: %s", tostring(Script), tostring(Category))
+
+        for Req_Type, Req_Value in pairs(Data.Requirements) do
+            DebugMessage("%s -- Comparing Req Value for Type: %s", tostring(Script), tostring(Req_Type))
+
+            if self.Tech_Values[Req_Type] ~= nil then
+                if self.Tech_Values[Req_Type] < Req_Value then
+                    DebugMessage("%s -- Failed Requirement Check for Type %s, Required Value: %s, Current Value: %s", tostring(Script), tostring(Req_Type), tostring(Req_Value), tostring(self.Tech_Values[Req_Type]))
+                    all_requirements_met = false
+                    break
+                end
+            else
+                DebugMessage("%s -- ERROR Requirement Type is missing Definitions in Fluid_Tech Main.lua!", tostring(Script))
+                all_requirements_met = false
+                break
+            end
+        end
+
+        Data.Requirements_Met = all_requirements_met
+    end
 end
 
 ---@private
@@ -121,37 +322,63 @@ function Fluid_Tech:Check_Units()
         return
     end
 
-    for Unit_Name, Data in pairs(self.Unit_Tech_Table.Units) do
+    if self:Table_Size(self.External_Unit_Table) < 1 then -- if table is nil returns 0, so we dont need to check it again
+        return
+    end
 
-        local all_requirements_met = true
+    for Unit_Name, Data in pairs(self.External_Unit_Table) do
+        local Categories = self:Resolve_Unit_Category(Unit_Name)
 
-        DebugMessage("%s -- Checking Requirements for Unit: %s", tostring(Script), tostring(Unit_Name))
+        local Is_Category_Locked = false
 
-        if type(Data.Requirements) == "table" then
-            for Req_Type, Req_Value in pairs(Data.Requirements) do
-                DebugMessage("%s -- Comparing Req Value for Type: %s", tostring(Script), tostring(Req_Type))
-                if self.Tech_Values[Req_Type] ~= nil then
-                    if self.Tech_Values[Req_Type] < Req_Value then
-                        DebugMessage("%s -- Failed Requirement Check for Type %s, Required Value: %s, Current Value: %s", tostring(Script), tostring(Req_Type), tostring(Req_Value), tostring(self.Tech_Values[Req_Type]))
-                        all_requirements_met = false
-                        break
+        local Skip_Category = false
+
+        DebugMessage("%s -- Checking Unit: %s", tostring(Script), tostring(Unit_Name))
+
+        if Categories ~= nil then
+            for _, Category in pairs(Categories) do
+                local Category_Data = self.Unit_Tech_Table:Resolve_Category_Data(Category)
+
+                if Category_Data ~= nil then
+                    if not Category_Data.Requirements_Met then
+                        Is_Category_Locked = true
                     end
-                else
-                    DebugMessage("%s -- ERROR Requirement Type is missing Definitions in Fluid_Tech Main.lua!", tostring(Script))
-                    all_requirements_met = false
-                    break
                 end
             end
         end
 
-        Data.Requirements_Met = all_requirements_met
+        if not Is_Category_Locked then
+            local Requirements_Met = true
 
-        if all_requirements_met then
-            self:Lock_Unit_Type(Unit_Name, true)
-        else
+            local Unit_Req_Data = self.Unit_Tech_Table:Resolve_Unit_Data(Unit_Name)
+
+            if type(Unit_Req_Data) == "table" then
+                for Req_Type, Req_Value in pairs(Unit_Req_Data.Requirements) do
+                    DebugMessage("%s -- Comparing Req Value for Type: %s", tostring(Script), tostring(Req_Type))
+                    if self.Tech_Values[Req_Type] ~= nil then
+                        if self.Tech_Values[Req_Type] < Req_Value then
+                            DebugMessage("%s -- Failed Requirement Check for Type %s, Required Value: %s, Current Value: %s", tostring(Script), tostring(Req_Type), tostring(Req_Value), tostring(self.Tech_Values[Req_Type]))
+                            Requirements_Met = false
+                            break
+                        end
+                    else
+                        DebugMessage("%s -- ERROR Requirement Type is missing Definitions in Fluid_Tech Main.lua!", tostring(Script))
+                        Requirements_Met = false
+                        break
+                    end
+                end
+            end
+
+            if Requirements_Met then
+                self:Lock_Unit_Type(Unit_Name, true)
+            else
+                self:Lock_Unit_Type(Unit_Name)
+            end
+        else -- if it's category is locked
             self:Lock_Unit_Type(Unit_Name)
         end
     end
+    
 end
 
 
