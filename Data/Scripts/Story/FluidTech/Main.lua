@@ -30,7 +30,7 @@ Fluid_Tech = {
     ---@type PlayerWrapper|nil
     Human = nil,
 
-    Plot_Location = "FluidTech\\GCOverseerEvents.xml",
+    Plot_Location = nil,
 
     ---@type StoryPlot|nil
     Plot = nil,
@@ -40,7 +40,15 @@ Fluid_Tech = {
 }
 ---@param HumanPlayer PlayerWrapper|nil
 ---@param Unit_Table table|nil
-function Fluid_Tech:Init(HumanPlayer, Unit_Table)
+---@param Plot_File_Location string
+function Fluid_Tech:Init(HumanPlayer, Unit_Table, Plot_File_Location)
+
+    if type(Plot_File_Location) ~= "string" then
+        DebugMessage("%s -- FluidTech Failed to Initalize, Failed to provide Story Plot Location", tostring(Script))
+        return
+    end
+
+    self.Plot_Location = Plot_File_Location
 
     if self.Unit_Tech_Table == nil then
         self.Unit_Tech_Table = require("FluidTech/Unit_Tech_Table")

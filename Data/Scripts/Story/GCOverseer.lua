@@ -29,7 +29,7 @@ function Init_GC(message)
 
     Player = Find_Human_Player()
 
-    local Example_Table = require("FluidTech/Example_Table")
+    local Example_Table = require("FluidTech/Example_Table") 
     
     FluidTech = require("FluidTech/Main")
 
@@ -37,15 +37,15 @@ function Init_GC(message)
         return
     end
 
-    FluidTech:Init(Player, Example_Table)
+    FluidTech:Init(Player, Example_Table, "FluidTech\\GCOverseerEvents.xml")
 
     if not FluidTech.Setup then
         return
     end
 
-    FluidTech.Notifications:Subscribe(Galactic_Unit_Produced,"GALACTIC_PRODUCTION_EVENT")
+    --FluidTech.Notifications:Subscribe(Galactic_Unit_Produced,"GALACTIC_PRODUCTION_EVENT")
 
-    FluidTech.Notifications:Subscribe(Galactic_Unit_Destoryed,"GALACTIC_DESTRUCTION_EVENT")
+    --FluidTech.Notifications:Subscribe(Galactic_Unit_Destoryed,"GALACTIC_DESTRUCTION_EVENT")
 
     Set_Next_State("Flush")
 end
